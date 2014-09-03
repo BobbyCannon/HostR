@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>HostR</id>
+		<version>1.0</version>
+		<authors>Bobby Cannon</authors>
+		<description>
+			HostR is a hosting framework for developers. It allows you to quickly host and manage services.
+		</description>
+		<dependencies>
+			<dependency id="NLog" version="3.1.0.0" />
+			<dependency id="Newtonsoft.Json" version="6.0.4" />
+		</dependencies>
+		<references>
+			<reference file="HostR.dll" />
+		</references>
+	</metadata>
+	<files>
+        <file src="C:\Binaries\HostR\HostR.dll" target="lib\net40" />
+	</files>
+</package>
