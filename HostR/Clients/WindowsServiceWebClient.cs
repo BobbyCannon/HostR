@@ -21,7 +21,7 @@ namespace HostR.Clients
 		#region Constructors
 
 		public WindowsServiceWebClient(string baseUri, string serviceRoute, T credentials)
-			: this(baseUri, serviceRoute, serviceRoute, credentials)
+			: this(baseUri, serviceRoute, serviceRoute + "/Login", credentials)
 		{
 		}
 

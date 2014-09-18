@@ -1,7 +1,12 @@
 ﻿#region References
 
+using System;
+using System.Configuration;
+using System.Net;
 using System.Web.Hosting;
 using System.Web.Http;
+using System.Web.Security;
+using HostR.Clients;
 using HostR.Services;
 
 #endregion
@@ -27,6 +32,20 @@ namespace HostR.Web.Controllers
 		#endregion
 
 		#region Methods
+
+		[HttpPost]
+		[ActionName("Login")]
+		[AllowAnonymous]
+		public void Login([FromBody] LoginCredentials credentials)
+		{
+			var expectedUserName = ConfigurationManager.AppSettings["UserName"];
+			var expectedPassword = ConfigurationManager.AppSettings["Password"];
+
+			if (credentials.UserName == expectedUserName && credentials.Password == expectedPassword)
+			{
+				FormsAuthentication.SetAuthCookie(credentials.UserName, false);
+			}
+		}
 
 		/// <summary>
 		/// Checks to see if there is an update for the service. The size of the update will be return. 

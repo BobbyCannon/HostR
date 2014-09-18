@@ -49,6 +49,7 @@ namespace HostR.Agent
 
 				while (!CancellationPending)
 				{
+					CheckForUpdate();
 					WriteLine("Count: " + count++);
 					Sleep(5000);
 				}

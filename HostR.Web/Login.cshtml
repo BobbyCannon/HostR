@@ -1,0 +1,35 @@
+﻿@{
+	Layout = "_Layout.cshtml";
+	
+	if (IsPost)
+	{
+		var userName = Request.Form["UserName"];
+		var password = Request.Form["Password"];
+
+		var expectedUserName = ConfigurationManager.AppSettings["UserName"];
+		var expectedPassword = ConfigurationManager.AppSettings["Password"];
+
+		if (userName == expectedUserName && password == expectedPassword)
+		{
+			FormsAuthentication.SetAuthCookie(userName, false);
+			Response.Redirect("/");
+		}
+	}
+	else if (Request.IsAuthenticated)
+	{
+		Response.Redirect("/");
+	}
+}
+
+<form method="post" class="login center">
+	<div>
+		<label for="UserName">UserName:</label>
+		<input type="text" name="UserName" value="" />
+	</div>
+	<div>
+		<label for="Password">Password:</label>
+		<input type="password" name="Password" value="" />
+	</div>
+
+	<input type="submit" value="Submit" />
+</form>

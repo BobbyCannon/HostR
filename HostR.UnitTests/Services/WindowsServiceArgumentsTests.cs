@@ -66,10 +66,25 @@ namespace HostR.UnitTests.Services
 		public void ParseServiceWebApi()
 		{
 			var expected = new WindowsServiceArguments();
-			expected.ServiceWebApi = "http://localhost/api/service";
-			expected.ServiceArguments = "-w http://localhost/api/service";
+			expected.ServiceWebApi = "http://localhost";
+			expected.ServiceArguments = "-w http://localhost";
 
-			var actual = new WindowsServiceArguments(new[] { "-w", "http://localhost/api/service" });
+			var actual = new WindowsServiceArguments(new[] { "-w", "http://localhost" });
+			actual.Parse();
+
+			TestHelper.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
+		public void ParseServiceWebApiUserNamePassword()
+		{
+			var expected = new WindowsServiceArguments();
+			expected.ServiceWebApi = "http://localhost";
+			expected.ServiceWebApiPassword = "P@ssw0rd!";
+			expected.ServiceWebApiUserName = "admin";
+			expected.ServiceArguments = "-w http://localhost -l admin -p P@ssw0rd!";
+
+			var actual = new WindowsServiceArguments(new[] { "-w", "http://localhost", "-l", "admin", "-p", "P@ssw0rd!" });
 			actual.Parse();
 
 			TestHelper.AreEqual(expected, actual);

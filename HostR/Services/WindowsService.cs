@@ -93,21 +93,25 @@ namespace HostR.Services
 		/// and returns true. If no update is found then return false.
 		/// </summary>
 		/// <returns>True if an update has started or false otherwise.</returns>
-		public bool CheckForUpdate()
+		protected void CheckForUpdate()
 		{
-			WriteLine("Check for a sync agent update.");
-			var serviceDetails = new WindowsServiceDetails { Name = _applicationName, Version = _version };
-			var updateSize = _client.CheckForUpdate(serviceDetails);
-			WriteLine("Update check returned " + updateSize + ".");
-
-			if (updateSize > 0)
+			try
 			{
-				WriteLine("Starting to update the sync agent.");
-				StartServiceUpdate(updateSize);
-				return true;
-			}
+				WriteLine("Check for a sync agent update.");
+				var serviceDetails = new WindowsServiceDetails { Name = _applicationName, Version = _version };
+				var updateSize = _client.CheckForUpdate(serviceDetails);
+				WriteLine("Update check returned " + updateSize + ".");
 
-			return false;
+				if (updateSize > 0)
+				{
+					WriteLine("Starting to update the sync agent.");
+					StartServiceUpdate(updateSize);
+				}
+			}
+			catch (Exception ex)
+			{
+				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
+			}
 		}
 
 		/// <summary>
@@ -126,6 +130,7 @@ namespace HostR.Services
 			var watch = Stopwatch.StartNew();
 			while (watch.Elapsed < delay && !CancellationPending && !TriggerPending)
 			{
+				CheckForUpdate();
 				Thread.Sleep(50);
 			}
 

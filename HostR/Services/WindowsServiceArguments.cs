@@ -97,8 +97,8 @@ namespace HostR.Services
 					case "/l":
 						if (++i < _arguments.Length)
 						{
-							ServiceWebApiUserName = _arguments[++i];
-							builder.AppendFormat("{0} {1} ", argument, ServiceWebApiUserName);
+							ServiceWebApiUserName = _arguments[i];
+							builder.AppendFormat(" {0} {1}", argument, ServiceWebApiUserName);
 						}
 
 						continue;
@@ -107,8 +107,8 @@ namespace HostR.Services
 					case "/p":
 						if (++i < _arguments.Length)
 						{
-							ServiceWebApiPassword = _arguments[++i];
-							builder.AppendFormat("{0} {1} ", argument, ServiceWebApiPassword);
+							ServiceWebApiPassword = _arguments[i];
+							builder.AppendFormat(" {0} {1}", argument, ServiceWebApiPassword);
 						}
 						continue;
 

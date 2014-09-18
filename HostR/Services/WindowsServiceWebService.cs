@@ -41,7 +41,7 @@ namespace HostR.Services
 			}
 
 			var filter = details.Name + "-*.zip";
-			var zipFilePath = Directory.GetFiles(_appDataDirectory, filter).FirstOrDefault();
+			var zipFilePath = Directory.GetFiles(_appDataDirectory, filter).OrderByDescending(x => x).FirstOrDefault();
 			if (zipFilePath == null)
 			{
 				return -2;
@@ -77,7 +77,7 @@ namespace HostR.Services
 			var filter = request.Name + "-*.zip";
 			var zipFilePath = Directory
 				.GetFiles(_appDataDirectory, filter)
-				.OrderBy(x => x)
+				.OrderByDescending(x => x)
 				.FirstOrDefault();
 
 			if (zipFilePath == null)

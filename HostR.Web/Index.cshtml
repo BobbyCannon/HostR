@@ -1,0 +1,13 @@
+﻿@{
+	Layout = "_Layout.cshtml";
+	
+	if (!Request.IsAuthenticated)
+	{
+		Response.Redirect("/Login");
+	}
+}
+
+@foreach (var file in Directory.EnumerateFiles(Server.MapPath("~/AppData")))
+{
+	<div>@file</div>
+}
