@@ -25,14 +25,14 @@ namespace Hostr.Triggers
 		public object Data { get; private set; }
 
 		/// <summary>
+		/// Gets the settings of the trigger.
+		/// </summary>
+		public TriggerSettings Settings { get; private set; }
+
+		/// <summary>
 		/// Gets the state of the trigger.
 		/// </summary>
 		public TriggerState State { get; private set; }
-
-		/// <summary>
-		/// Gets the settings.
-		/// </summary>
-		protected TriggerSettings Settings { get; private set; }
 
 		#endregion
 
@@ -68,12 +68,16 @@ namespace Hostr.Triggers
 			State = TriggerState.Set;
 		}
 
-		protected virtual void OnWriteLine(string e)
+		/// <summary>
+		/// Represents the method that handles the write line event of a Processor object. 
+		/// </summary>
+		/// <param name="message">The message to write.</param>
+		protected virtual void OnWriteLine(string message)
 		{
 			var handler = WriteLine;
 			if (handler != null)
 			{
-				handler(this, e);
+				handler(this, message);
 			}
 		}
 
@@ -81,6 +85,9 @@ namespace Hostr.Triggers
 
 		#region Events
 
+		/// <summary>
+		/// Represents the method that handles the write line event of a Trigger object. 
+		/// </summary>
 		public event EventHandler<string> WriteLine;
 
 		#endregion

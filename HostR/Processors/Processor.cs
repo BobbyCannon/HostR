@@ -47,12 +47,16 @@ namespace Hostr.Processors
 		/// </summary>
 		public abstract void ProcessTriggers();
 
-		protected virtual void OnWriteLine(string e)
+		/// <summary>
+		/// Represents the method that handles the write line event of a Processor object. 
+		/// </summary>
+		/// <param name="message">The message to write.</param>
+		protected virtual void OnWriteLine(string message)
 		{
 			var handler = WriteLine;
 			if (handler != null)
 			{
-				handler(this, e);
+				handler(this, message);
 			}
 		}
 
@@ -60,6 +64,9 @@ namespace Hostr.Processors
 
 		#region Events
 
+		/// <summary>
+		/// Represents the method that handles the write line event of a Processor object. 
+		/// </summary>
 		public event EventHandler<string> WriteLine;
 
 		#endregion

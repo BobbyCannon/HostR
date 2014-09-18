@@ -22,6 +22,11 @@ namespace Hostr.Triggers
 		object Data { get; }
 
 		/// <summary>
+		/// Gets the settings of the trigger.
+		/// </summary>
+		TriggerSettings Settings { get; }
+
+		/// <summary>
 		/// Gets the state of the trigger.
 		/// </summary>
 		TriggerState State { get; }
@@ -51,6 +56,9 @@ namespace Hostr.Triggers
 
 		#region Events
 
+		/// <summary>
+		/// Represents the method that handles the write line event of a Trigger object. 
+		/// </summary>
 		event EventHandler<string> WriteLine;
 
 		#endregion

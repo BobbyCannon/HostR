@@ -36,6 +36,9 @@ namespace Hostr.Processors
 
 		#region Events
 
+		/// <summary>
+		/// Represents the method that handles the write line event of a Processor object. 
+		/// </summary>
 		event EventHandler<string> WriteLine;
 
 		#endregion
