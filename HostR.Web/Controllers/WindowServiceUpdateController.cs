@@ -8,7 +8,7 @@ using HostR.Services;
 
 namespace HostR.Web.Controllers
 {
-	public class AgentServiceController : ApiController, IWindowsServiceWebService
+	public class WindowServiceUpdateController : ApiController, IWindowsServiceWebService
 	{
 		#region Fields
 
@@ -18,7 +18,7 @@ namespace HostR.Web.Controllers
 
 		#region Constructors
 
-		public AgentServiceController()
+		public WindowServiceUpdateController()
 		{
 			var directory = HostingEnvironment.MapPath("~/AppData/");
 			_service = new WindowsServiceWebService(directory);

@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Build.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HostR\HostR.csproj">

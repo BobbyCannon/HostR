@@ -86,7 +86,7 @@
     <Compile Include="Triggers\TriggerState.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Deploy.ps1" />
+    <None Include="Build.ps1" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

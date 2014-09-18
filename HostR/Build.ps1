@@ -18,7 +18,7 @@ if (!(Test-Path $nugetDestination -PathType Container)){
     New-Item $nugetDestination -ItemType Directory | Out-Null
 }
 
-Write-Host "Deploying HostR..." -ForegroundColor Green
+Write-Host "Publishing HostR..." -ForegroundColor Green
 Copy-Item "$scriptPath\bin\$configuration\HostR*.dll" "$destination"
 
 $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("$destination\HostR.dll")

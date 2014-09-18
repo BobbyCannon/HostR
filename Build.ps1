@@ -16,7 +16,10 @@ if ($args.Count -gt 0) {
 $build = [Math]::Floor([DateTime]::UtcNow.Subtract([DateTime]::Parse("01/01/2000").Date).TotalDays)
 $revision = [Math]::Floor([DateTime]::UtcNow.TimeOfDay.TotalSeconds / 2)
 
-.\IncrementVersion.ps1 HostR $build $revision
+$folders = Get-ChildItem | ?{ $_.PSIsContainer }
+foreach ($folder in $folders) {
+    .\IncrementVersion.ps1 $folder.Name $build $revision
+}
 
 Write-Host "Building HostR (build: $build, revision: $revision)..." -ForegroundColor Green
 
@@ -25,9 +28,14 @@ try
     $msbuild = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe"
     cmd /c $msbuild "$scriptPath\HostR.sln" /p:Configuration="$configuration" /p:Platform="Any CPU" /t:Rebuild /p:VisualStudioVersion=12.0 /v:m /m /clp:ErrorsOnly
 
-    .\HostR\Deploy.ps1 "$configuration"
-    Set-Location $scriptPath
-        
+    foreach ($folder in $folders) {
+        $folderName = $folder.Name
+        if (Test-Path -Type Leaf "$folderName\Build.ps1") {
+            & .\$folderName\Build.ps1 "$configuration"
+            Set-Location $scriptPath
+        }
+    }
+
     ResetAssemblyInfos
 }
 finally
@@ -35,5 +43,5 @@ finally
     Set-Location $scriptPath
 }
 
-Write-Host "HostR Deploy: " $watch.Elapsed -ForegroundColor Yellow
 Write-Host
+Write-Host "HostR Build: " $watch.Elapsed -ForegroundColor Yellow

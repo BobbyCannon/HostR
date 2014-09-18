@@ -15,7 +15,7 @@ namespace HostR.Agent
 		{
 			var arguments = WindowsServiceArguments.Create(args);
 			var credentials = new LoginCredentials { UserName = arguments.ServiceWebApiUserName, Password = arguments.ServiceWebApiPassword };
-			var client = new WindowsServiceWebClient<LoginCredentials>(arguments.ServiceWebApi, "api/AgentService", credentials);
+			var client = new WindowsServiceWebClient<LoginCredentials>(arguments.ServiceWebApi, "api/WindowServiceUpdate", credentials);
 			var service = new Service("HostR Agent", "Service agent for HostR.", arguments, client);
 			service.Start();
 		}
