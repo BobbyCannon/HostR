@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostR.Agent", "HostR.Agent\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostR.Web", "HostR.Web\HostR.Web.csproj", "{CD754075-CE0D-4657-A246-4F26B4ADB7BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostR.BasicService", "HostR.BasicService\HostR.BasicService.csproj", "{E7FC91F7-11D7-4674-B2E9-6C6D07E319D2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,10 @@ Global
 		{CD754075-CE0D-4657-A246-4F26B4ADB7BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD754075-CE0D-4657-A246-4F26B4ADB7BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD754075-CE0D-4657-A246-4F26B4ADB7BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7FC91F7-11D7-4674-B2E9-6C6D07E319D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7FC91F7-11D7-4674-B2E9-6C6D07E319D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7FC91F7-11D7-4674-B2E9-6C6D07E319D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7FC91F7-11D7-4674-B2E9-6C6D07E319D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

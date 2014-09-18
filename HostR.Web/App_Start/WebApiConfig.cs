@@ -1,7 +1,6 @@
 ﻿#region References
 
 using System.Web.Http;
-using System.Web.Http.ExceptionHandling;
 
 #endregion
 

@@ -12,6 +12,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HostR.Extensions;
+using Hostr.Extensions;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
 
 #endregion
 
@@ -30,6 +34,7 @@ namespace HostR.Services
 		private string _applicationDirectory;
 		private string _applicationFilePath;
 		private string _applicationName;
+		private Logger _logger;
 		private Task _task;
 		private CancellationTokenSource _taskToken;
 		private string _version;
@@ -41,7 +46,7 @@ namespace HostR.Services
 		/// <summary>
 		/// Initializes a new instance of the WindowsSerivce class.
 		/// </summary>
-		protected WindowsService(string displayName, string description, WindowsServiceArguments arguments, IWindowsServiceWebService client)
+		protected WindowsService(string displayName, string description, WindowsServiceArguments arguments, IWindowsServiceWebService client = null)
 		{
 			_displayName = displayName;
 			_description = description;
@@ -68,6 +73,11 @@ namespace HostR.Services
 		{
 			get { return _task.Status == TaskStatus.Running; }
 		}
+
+		/// <summary>
+		/// Gets a value indicating if the service is being trigger.
+		/// </summary>
+		public bool TriggerPending { get; set; }
 
 		/// <summary>
 		/// The arguments the service was started with
@@ -101,11 +111,26 @@ namespace HostR.Services
 		}
 
 		/// <summary>
-		/// Allows public access to the OnStop method.
+		/// Puts the service to sleep for provided delay (in milliseconds). The service will be woke up if the service gets a request to close or to trigger the service.
 		/// </summary>
-		public void DebugStop()
+		protected void Sleep(int delay)
 		{
-			OnStop();
+			Sleep(TimeSpan.FromMilliseconds(delay));
+		}
+
+		/// <summary>
+		/// Puts the service to sleep for provided delay. The service will be woke up if the service gets a request to close or to trigger the service.
+		/// </summary>
+		protected void Sleep(TimeSpan delay)
+		{
+			var watch = Stopwatch.StartNew();
+			while (watch.Elapsed < delay && !CancellationPending && !TriggerPending)
+			{
+				Thread.Sleep(50);
+			}
+
+			// Clear the pending trigger.
+			TriggerPending = false;
 		}
 
 		/// <summary>
@@ -113,19 +138,28 @@ namespace HostR.Services
 		/// </summary>
 		public void Start()
 		{
-			_applicationFilePath = Assembly.GetCallingAssembly().Location;
+			var assembly = Assembly.GetCallingAssembly();
+			_applicationFilePath = assembly.Location;
 			_applicationDirectory = Path.GetDirectoryName(_applicationFilePath);
 			_applicationName = Path.GetFileNameWithoutExtension(_applicationFilePath);
-			_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+			_version = assembly.GetName().Version.ToString();
 
-			if (String.IsNullOrEmpty(Arguments.ServiceName))
+			if (string.IsNullOrEmpty(Arguments.ServiceName))
 			{
 				Arguments.ServiceName = _applicationName;
 			}
 
+			if (LogManager.Configuration == null || LogManager.Configuration.AllTargets.Count <= 0)
+			{
+				EnableDefaultLogTargets();
+			}
+
+			_logger = LogManager.GetLogger(Arguments.ServiceName);
+			WriteLine("{0} v{1}", _displayName, _version);
+
 			if (Arguments.ShowHelp)
 			{
-				Console.WriteLine(BuildHelpInformation());
+				WriteLine(BuildHelpInformation());
 				return;
 			}
 
@@ -168,15 +202,14 @@ namespace HostR.Services
 		{
 			var builder = new StringBuilder();
 
-			builder.AppendFormat("\r\n{0} v{1}\r\n", _displayName, _version);
-			builder.AppendFormat("{0} [-i] [-u] [-h]\r\n", _applicationName);
+			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-h]\r\n", _applicationName);
 			builder.AppendLine("[-i] Install the service.");
 			builder.AppendLine("[-u] Uninstall the service.");
 			builder.AppendLine("[-n] The name for the service. Defaults to FileName.");
 			builder.AppendLine("[-w] The URI of the service API.");
 			builder.AppendLine("[-l] The username for the service API.");
 			builder.AppendLine("[-p] The password for the service API.");
-			builder.AppendLine("[-d] Wait for debugger.");
+			builder.AppendLine("[-d] Developer option to wait for debugger.");
 			builder.AppendLine("[-r] The path of the installation to upgrade.");
 			builder.Append("[-h] Prints the help menu.");
 
@@ -195,11 +228,11 @@ namespace HostR.Services
 				throw new InvalidOperationException("The service is already running.");
 			}
 
-			// Create our debug service.
+			WriteLine("Starting the service...");
 			_taskToken = new CancellationTokenSource();
 			_task = new Task(Process, _taskToken.Token);
 			_task.Start();
-
+			WriteLine("The service has started.");
 			base.OnStart(args);
 		}
 
@@ -209,9 +242,11 @@ namespace HostR.Services
 		/// </summary>
 		protected override void OnStop()
 		{
+			WriteLine("Stopping the service...");
 			_taskToken.Cancel();
 			_task.Wait(new TimeSpan(0, 1, 0));
 			_task = null;
+			WriteLine("The service has stopped.");
 			base.OnStop();
 		}
 
@@ -220,12 +255,48 @@ namespace HostR.Services
 		/// </summary>
 		protected abstract void Process();
 
-		protected virtual void WriteLine(string message)
+		/// <summary>
+		/// Writes an "info" message to the logger.
+		/// </summary>
+		/// <param name="message">The message to write.</param>
+		/// <param name="parameters">The optional parameters for the message.</param>
+		protected void WriteLine(string message, params object[] parameters)
 		{
-			var handler = OnWriteLine;
-			if (handler != null)
+			WriteLine(message, LogLevel.Info, parameters);
+		}
+
+		/// <summary>
+		/// Writes an message to the logger at a provided level.
+		/// </summary>
+		/// <param name="message">The message to write.</param>
+		/// <param name="level">The level at which to write the message.</param>
+		/// <param name="parameters">The optional parameters for the message.</param>
+		protected void WriteLine(string message, LogLevel level, params object[] parameters)
+		{
+			if (_logger == null)
 			{
-				handler(message);
+				return;
+			}
+
+			if (level == LogLevel.Debug)
+			{
+				_logger.Debug(message, parameters);
+			}
+			else if (level == LogLevel.Fatal)
+			{
+				_logger.Fatal(message, parameters);
+			}
+			else if (level == LogLevel.Trace)
+			{
+				_logger.Trace(message, parameters);
+			}
+			else if (level == LogLevel.Warn)
+			{
+				_logger.Warn(message, parameters);
+			}
+			else
+			{
+				_logger.Info(message, parameters);
 			}
 		}
 
@@ -270,6 +341,32 @@ namespace HostR.Services
 		}
 
 		/// <summary>
+		/// Configures the log targets that this service will use. The default log targets is a colored console target that logs verbose and a event log 
+		/// target that logs "info" or higher.
+		/// </summary>
+		private void EnableDefaultLogTargets()
+		{
+			// Start configuring the logger.
+			var loggingConfiguration = new LoggingConfiguration();
+
+			// Configure the console logger.
+			var consoleTarget = new ColoredConsoleTarget();
+			consoleTarget.Layout = "${message}";
+			loggingConfiguration.AddTarget("Console", consoleTarget);
+			loggingConfiguration.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, consoleTarget));
+
+			// Configure the event logger for exceptions.
+			var eventLogTarget = new EventLogTarget();
+			eventLogTarget.Source = Arguments.ServiceName;
+			eventLogTarget.Layout = "${message}";
+			loggingConfiguration.AddTarget("EventLog", eventLogTarget);
+			loggingConfiguration.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, eventLogTarget));
+
+			// Enable the logger and print the current version.
+			LogManager.Configuration = loggingConfiguration;
+		}
+
+		/// <summary>
 		/// Grab the console and wait for it to close.
 		/// </summary>
 		private void HandleConsole()
@@ -293,6 +390,9 @@ namespace HostR.Services
 						// It was not a space so break the running loop and close the agent.
 						break;
 					}
+
+					// Set the pending trigger flag. This allows the service to break out of a delay.
+					TriggerPending = true;
 				}
 			}
 
@@ -309,8 +409,16 @@ namespace HostR.Services
 		/// </summary>
 		private void InstallService()
 		{
-			WindowsServiceInstaller.InstallService(_applicationFilePath, Arguments.ServiceName, _displayName, _description, ServiceStartMode.Automatic);
-			WindowsServiceInstaller.SetServiceArguments(Arguments.ServiceName, Arguments.ServiceArguments);
+			try
+			{
+				var displayName = Arguments.ServiceName != _applicationName ? _displayName + " (" + Arguments.ServiceName + ")" : _displayName;
+				WindowsServiceInstaller.InstallService(_applicationFilePath, Arguments.ServiceName, displayName, _description, ServiceStartMode.Automatic);
+				WindowsServiceInstaller.SetServiceArguments(Arguments.ServiceName, Arguments.ServiceArguments);
+			}
+			catch (Exception ex)
+			{
+				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
+			}
 		}
 
 		private string SaveUpdate(byte[] agentBits)
@@ -436,7 +544,14 @@ namespace HostR.Services
 		/// </summary>
 		private void UninstallService()
 		{
-			WindowsServiceInstaller.UninstallService(Arguments.ServiceName);
+			try
+			{
+				WindowsServiceInstaller.UninstallService(Arguments.ServiceName);
+			}
+			catch (Exception ex)
+			{
+				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
+			}
 		}
 
 		/// <summary>
@@ -573,12 +688,6 @@ namespace HostR.Services
 
 		[DllImport("kernel32.dll")]
 		private static extern bool SetConsoleCtrlHandler(HandlerRoutine handler, bool add);
-
-		#endregion
-
-		#region Events
-
-		public event Action<string> OnWriteLine;
 
 		#endregion
 

@@ -7,7 +7,7 @@ using System.Net.Http;
 
 namespace HostR.Clients
 {
-	public class LoginHttpClient<TCredentials> : HttpClient 
+	public class LoginHttpClient<TCredentials> : HttpClient
 		where TCredentials : class
 	{
 		#region Fields

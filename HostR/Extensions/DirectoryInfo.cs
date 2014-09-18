@@ -6,7 +6,7 @@ using System.IO;
 
 namespace HostR.Extensions
 {
-	public static partial class Helper
+	public static class Helper
 	{
 		#region Static Methods
 

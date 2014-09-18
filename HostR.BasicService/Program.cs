@@ -1,11 +1,10 @@
 ﻿#region References
 
-using HostR.Clients;
 using HostR.Services;
 
 #endregion
 
-namespace HostR.Agent
+namespace HostR.BasicService
 {
 	internal class Program
 	{
@@ -14,9 +13,7 @@ namespace HostR.Agent
 		private static void Main(string[] args)
 		{
 			var arguments = WindowsServiceArguments.Create(args);
-			var credentials = new LoginCredentials { UserName = arguments.ServiceWebApiUserName, Password = arguments.ServiceWebApiPassword };
-			var client = new WindowsServiceWebClient<LoginCredentials>(arguments.ServiceWebApi, "api/AgentService", credentials);
-			var service = new Service("HostR Agent", "Service agent for HostR.", arguments, client);
+			var service = new Service("HostR BasicService", "Really simple windows service.", arguments);
 			service.Start();
 		}
 
@@ -31,8 +28,8 @@ namespace HostR.Agent
 			/// <summary>
 			/// Initializes a new instance of the WindowsSerivce class.
 			/// </summary>
-			public Service(string displayName, string description, WindowsServiceArguments arguments, IWindowsServiceWebService client)
-				: base(displayName, description, arguments, client)
+			public Service(string displayName, string description, WindowsServiceArguments arguments)
+				: base(displayName, description, arguments)
 			{
 			}
 

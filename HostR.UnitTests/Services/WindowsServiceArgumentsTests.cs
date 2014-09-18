@@ -13,6 +13,18 @@ namespace HostR.UnitTests.Services
 		#region Methods
 
 		[TestMethod]
+		public void ParseHelp()
+		{
+			var expected = new WindowsServiceArguments();
+			expected.ShowHelp = true;
+
+			var actual = new WindowsServiceArguments(new[] { "-h" });
+			actual.Parse();
+
+			TestHelper.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
 		public void ParseInstall()
 		{
 			var expected = new WindowsServiceArguments();
@@ -23,7 +35,7 @@ namespace HostR.UnitTests.Services
 
 			TestHelper.AreEqual(expected, actual);
 		}
-		
+
 		[TestMethod]
 		public void ParseInstallUninstall()
 		{
@@ -36,19 +48,7 @@ namespace HostR.UnitTests.Services
 
 			TestHelper.AreEqual(expected, actual);
 		}
-		
-		[TestMethod]
-		public void ParseHelp()
-		{
-			var expected = new WindowsServiceArguments();
-			expected.ShowHelp = true;
 
-			var actual = new WindowsServiceArguments(new[] { "-h" });
-			actual.Parse();
-
-			TestHelper.AreEqual(expected, actual);
-		}
-		
 		[TestMethod]
 		public void ParseServiceName()
 		{
@@ -61,7 +61,7 @@ namespace HostR.UnitTests.Services
 
 			TestHelper.AreEqual(expected, actual);
 		}
-		
+
 		[TestMethod]
 		public void ParseServiceWebApi()
 		{
@@ -74,7 +74,7 @@ namespace HostR.UnitTests.Services
 
 			TestHelper.AreEqual(expected, actual);
 		}
-		
+
 		[TestMethod]
 		public void ParseUninstall()
 		{
