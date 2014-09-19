@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Hostr.Extensions;
 using HostR.Extensions;
 using HostR.Interfaces;
@@ -51,7 +52,7 @@ namespace HostR.Services
 			_displayName = displayName;
 			_description = description;
 			_client = client;
-			_serviceThread = new Thread(Process);
+			_serviceThread = new Thread(ServiceThread);
 		}
 
 		#endregion
@@ -299,6 +300,7 @@ namespace HostR.Services
 		/// <param name="destination">The directory to copy the source into.</param>
 		private void CopyDirectory(string source, string destination)
 		{
+			Console.WriteLine("Emptying the directory [" + destination + "]");
 			var destinationInfo = new DirectoryInfo(destination);
 			destinationInfo.Empty();
 
@@ -433,11 +435,27 @@ namespace HostR.Services
 		}
 
 		/// <summary>
+		/// Internal management of service thread.
+		/// </summary>
+		private void ServiceThread()
+		{
+			try
+			{
+				// Run the windows service process.
+				Process();
+			}
+			catch (Exception ex)
+			{
+				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
+			}
+		}
+
+		/// <summary>
 		/// Shutdown all the other services.
 		/// </summary>
 		private void ShutdownServices()
 		{
-			WriteLine("Shutting down all the running sync agents.");
+			WriteLine("Shutting down all the running services.");
 
 			if (ServiceController.GetServices().Any(x => x.ServiceName == Arguments.ServiceName))
 			{
@@ -524,7 +542,7 @@ namespace HostR.Services
 			StartProcess(directory, _applicationName + ".exe", Arguments.ServiceArguments + " -r \"" + _applicationDirectory + "\"");
 
 			WriteLine("Shutting down service for updating.");
-			OnStop();
+			Task.Run(() => OnStop());
 		}
 
 		/// <summary>
@@ -581,15 +599,16 @@ namespace HostR.Services
 		{
 			// Get all the other service processes other than this one.
 			var myProcess = System.Diagnostics.Process.GetCurrentProcess();
-			var otherProcesses = System.Diagnostics.Process.GetProcessesByName(Arguments.ServiceName)
+			var otherProcesses = System.Diagnostics.Process.GetProcessesByName(_applicationName)
 				.Where(p => p.Id != myProcess.Id)
 				.ToList();
 
-			// Start a timeout timer so we can give up after 30 seconds.
-			var timeout = Stopwatch.StartNew();
+			// Start a timeout timer so we can give up after 1 minute and 30 seconds.
+			var watch = Stopwatch.StartNew();
+			var timeout = new TimeSpan(0, 1, 30);
 
-			// Keep checking for other processes for 30 seconds. The other service should have stopped within the timeout.
-			while ((otherProcesses.Count > 0) && (timeout.Elapsed.TotalSeconds < 30))
+			// Keep checking for other processes for 1.5 minutes. The other service should have stopped within the timeout.
+			while ((otherProcesses.Count > 0) && (watch.Elapsed < timeout))
 			{
 				// Display we are waiting.
 				WriteLine("Waiting for the other services to shutdown.");
@@ -598,7 +617,7 @@ namespace HostR.Services
 				Thread.Sleep(1000);
 
 				// Refresh the process list.
-				otherProcesses = System.Diagnostics.Process.GetProcessesByName(Arguments.ServiceName)
+				otherProcesses = System.Diagnostics.Process.GetProcessesByName(_applicationName)
 					.Where(p => p.Id != myProcess.Id)
 					.ToList();
 			}
