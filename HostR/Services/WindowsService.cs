@@ -155,7 +155,6 @@ namespace HostR.Services
 			builder.AppendLine("[-l] The username for the service API.");
 			builder.AppendLine("[-p] The password for the service API.");
 			builder.AppendLine("[-d] Developer option to wait for debugger.");
-			builder.AppendLine("[-r] The path of the installation to upgrade.");
 			builder.AppendLine("[-v] Enables verbose logging.");
 			builder.Append("[-h] Prints the help menu.");
 

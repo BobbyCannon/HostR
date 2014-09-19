@@ -48,7 +48,7 @@ namespace HostR.Web.Controllers
 		/// <summary>
 		/// Downloads a chuck of the update based on the offset.
 		/// </summary>
-		/// <param name="request">The request to download the chuck for..</param>
+		/// <param name="request">The request to download the chuck for.</param>
 		/// <returns>A chuck of the update starting from the update.</returns>
 		[HttpPost]
 		[ActionName("DownloadUpdateChunk")]

@@ -26,7 +26,7 @@ namespace HostR.BasicService
 			#region Constructors
 
 			/// <summary>
-			/// Initializes a new instance of the WindowsSerivce class.
+			/// Initializes a new instance of the WindowsService class.
 			/// </summary>
 			public Service(string displayName, string description, WindowsServiceArguments arguments)
 				: base(displayName, description, arguments)
