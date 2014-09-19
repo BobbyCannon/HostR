@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using HostR.Extensions;
 using Hostr.Extensions;
+using HostR.Extensions;
+using HostR.Interfaces;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -31,12 +31,11 @@ namespace HostR.Services
 		private readonly IWindowsServiceWebService _client;
 		private readonly string _description;
 		private readonly string _displayName;
+		private readonly Thread _serviceThread;
 		private string _applicationDirectory;
 		private string _applicationFilePath;
 		private string _applicationName;
 		private Logger _logger;
-		private Task _task;
-		private CancellationTokenSource _taskToken;
 		private string _version;
 
 		#endregion
@@ -48,10 +47,11 @@ namespace HostR.Services
 		/// </summary>
 		protected WindowsService(string displayName, string description, WindowsServiceArguments arguments, IWindowsServiceWebService client = null)
 		{
+			Arguments = arguments;
 			_displayName = displayName;
 			_description = description;
 			_client = client;
-			Arguments = arguments;
+			_serviceThread = new Thread(Process);
 		}
 
 		#endregion
@@ -59,20 +59,9 @@ namespace HostR.Services
 		#region Properties
 
 		/// <summary>
-		/// Gets a value indicating if the service is being cancelled.
-		/// </summary>
-		public bool CancellationPending
-		{
-			get { return _taskToken.IsCancellationRequested; }
-		}
-
-		/// <summary>
 		/// Gets a value indicating if the service is running.
 		/// </summary>
-		public bool IsRunning
-		{
-			get { return _task.Status == TaskStatus.Running; }
-		}
+		public bool IsRunning { get; set; }
 
 		/// <summary>
 		/// Gets a value indicating if the service is being trigger.
@@ -87,56 +76,6 @@ namespace HostR.Services
 		#endregion
 
 		#region Methods
-
-		/// <summary>
-		/// Checks the client to see if there is an update available. If so it starts the update process
-		/// and returns true. If no update is found then return false.
-		/// </summary>
-		/// <returns>True if an update has started or false otherwise.</returns>
-		protected void CheckForUpdate()
-		{
-			try
-			{
-				WriteLine("Check for a sync agent update.");
-				var serviceDetails = new WindowsServiceDetails { Name = _applicationName, Version = _version };
-				var updateSize = _client.CheckForUpdate(serviceDetails);
-				WriteLine("Update check returned " + updateSize + ".");
-
-				if (updateSize > 0)
-				{
-					WriteLine("Starting to update the sync agent.");
-					StartServiceUpdate(updateSize);
-				}
-			}
-			catch (Exception ex)
-			{
-				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
-			}
-		}
-
-		/// <summary>
-		/// Puts the service to sleep for provided delay (in milliseconds). The service will be woke up if the service gets a request to close or to trigger the service.
-		/// </summary>
-		protected void Sleep(int delay)
-		{
-			Sleep(TimeSpan.FromMilliseconds(delay));
-		}
-
-		/// <summary>
-		/// Puts the service to sleep for provided delay. The service will be woke up if the service gets a request to close or to trigger the service.
-		/// </summary>
-		protected void Sleep(TimeSpan delay)
-		{
-			var watch = Stopwatch.StartNew();
-			while (watch.Elapsed < delay && !CancellationPending && !TriggerPending)
-			{
-				CheckForUpdate();
-				Thread.Sleep(50);
-			}
-
-			// Clear the pending trigger.
-			TriggerPending = false;
-		}
 
 		/// <summary>
 		/// Allows public access to the OnStart method.
@@ -189,7 +128,7 @@ namespace HostR.Services
 			// Check to see if we need to run in service mode.
 			if (!Environment.UserInteractive)
 			{
-				// Run the agent in service mode.
+				// Run the service in service mode.
 				Run(this);
 				return;
 			}
@@ -207,7 +146,7 @@ namespace HostR.Services
 		{
 			var builder = new StringBuilder();
 
-			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-h]\r\n", _applicationName);
+			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-h] [-v]\r\n", _applicationName);
 			builder.AppendLine("[-i] Install the service.");
 			builder.AppendLine("[-u] Uninstall the service.");
 			builder.AppendLine("[-n] The name for the service. Defaults to FileName.");
@@ -216,9 +155,35 @@ namespace HostR.Services
 			builder.AppendLine("[-p] The password for the service API.");
 			builder.AppendLine("[-d] Developer option to wait for debugger.");
 			builder.AppendLine("[-r] The path of the installation to upgrade.");
+			builder.AppendLine("[-v] Enables verbose logging.");
 			builder.Append("[-h] Prints the help menu.");
 
 			return builder.ToString();
+		}
+
+		/// <summary>
+		/// Checks the client to see if there is an update available. If so it starts the update process
+		/// and returns true. If no update is found then return false.
+		/// </summary>
+		/// <returns>True if an update has started or false otherwise.</returns>
+		protected void CheckForUpdate()
+		{
+			try
+			{
+				WriteLine("Check for a service update.", LogLevel.Trace);
+				var serviceDetails = new WindowsServiceDetails { Name = _applicationName, Version = _version };
+				var update = _client.CheckForUpdate(serviceDetails);
+
+				if (update.Size > 0)
+				{
+					WriteLine("Starting to update the service.");
+					StartServiceUpdate(update);
+				}
+			}
+			catch (Exception ex)
+			{
+				WriteLine(ex.ToDetailedString(), LogLevel.Fatal);
+			}
 		}
 
 		/// <summary>
@@ -228,15 +193,9 @@ namespace HostR.Services
 		/// <param name="args">Data passed by the start command.</param>
 		protected override void OnStart(string[] args)
 		{
-			if (_task != null)
-			{
-				throw new InvalidOperationException("The service is already running.");
-			}
-
 			WriteLine("Starting the service...");
-			_taskToken = new CancellationTokenSource();
-			_task = new Task(Process, _taskToken.Token);
-			_task.Start();
+			IsRunning = true;
+			_serviceThread.Start();
 			WriteLine("The service has started.");
 			base.OnStart(args);
 		}
@@ -247,10 +206,15 @@ namespace HostR.Services
 		/// </summary>
 		protected override void OnStop()
 		{
+			if (!IsRunning)
+			{
+				// Return because we are not running.
+				return;
+			}
+
 			WriteLine("Stopping the service...");
-			_taskToken.Cancel();
-			_task.Wait(new TimeSpan(0, 1, 0));
-			_task = null;
+			IsRunning = false;
+			_serviceThread.Join(new TimeSpan(0, 1, 0));
 			WriteLine("The service has stopped.");
 			base.OnStop();
 		}
@@ -259,6 +223,29 @@ namespace HostR.Services
 		/// The thread for the service.
 		/// </summary>
 		protected abstract void Process();
+
+		/// <summary>
+		/// Puts the service to sleep for provided delay (in milliseconds). The service will be woke up if the service gets a request to close or to trigger the service.
+		/// </summary>
+		protected void Sleep(int delay)
+		{
+			Sleep(TimeSpan.FromMilliseconds(delay));
+		}
+
+		/// <summary>
+		/// Puts the service to sleep for provided delay. The service will be woke up if the service gets a request to close or to trigger the service.
+		/// </summary>
+		protected void Sleep(TimeSpan delay)
+		{
+			var watch = Stopwatch.StartNew();
+			while (watch.Elapsed < delay && IsRunning && !TriggerPending)
+			{
+				Thread.Sleep(50);
+			}
+
+			// Clear the pending trigger.
+			TriggerPending = false;
+		}
 
 		/// <summary>
 		/// Writes an "info" message to the logger.
@@ -327,11 +314,11 @@ namespace HostR.Services
 			}
 		}
 
-		private byte[] DownloadUpdate(long size)
+		private byte[] DownloadUpdate(WindowsServiceUpdate update)
 		{
 			// Get the file from the deployment service.
-			var data = new byte[size];
-			var request = new WindowsServiceUpdateRequest { Name = _applicationName, Offset = 0 };
+			var data = new byte[update.Size];
+			var request = new WindowsServiceUpdateRequest { Name = update.Name, Offset = 0 };
 
 			// Read the whole file.
 			while (request.Offset < data.Length)
@@ -358,7 +345,7 @@ namespace HostR.Services
 			var consoleTarget = new ColoredConsoleTarget();
 			consoleTarget.Layout = "${message}";
 			loggingConfiguration.AddTarget("Console", consoleTarget);
-			loggingConfiguration.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, consoleTarget));
+			loggingConfiguration.LoggingRules.Add(new LoggingRule("*", Arguments.VerboseLogging ? LogLevel.Trace : LogLevel.Info, consoleTarget));
 
 			// Configure the event logger for exceptions.
 			var eventLogTarget = new EventLogTarget();
@@ -392,7 +379,7 @@ namespace HostR.Services
 					// Check to see if the key was a space.
 					if (Console.ReadKey(true).Key != ConsoleKey.Spacebar)
 					{
-						// It was not a space so break the running loop and close the agent.
+						// It was not a space so break the running loop and close the service.
 						break;
 					}
 
@@ -401,7 +388,7 @@ namespace HostR.Services
 				}
 			}
 
-			// It was not a space so break the running loop and close the agent.
+			// It was not a space so break the running loop and close the service.
 			OnStop();
 
 			// If we don't have this the handler will get garbage collected and will result in a
@@ -435,11 +422,11 @@ namespace HostR.Services
 			WriteLine("Cleaning up the update folder.");
 			CreateOrCleanDirectory(agentUpdateDirectory + "\\Update");
 
-			WriteLine("Save the new agent to the update folder.");
+			WriteLine("Save the new service to the update folder.");
 			File.WriteAllBytes(agentUpdateFilePath, agentBits);
 
 			// Extract the bits to a temp folder.
-			WriteLine("Extract the new agent to the update folder.");
+			WriteLine("Extract the new service to the update folder.");
 			ExtractZipfile(agentUpdateFilePath);
 
 			return agentUpdateDirectory + "\\Update";
@@ -452,7 +439,7 @@ namespace HostR.Services
 		{
 			WriteLine("Shutting down all the running sync agents.");
 
-			try
+			if (ServiceController.GetServices().Any(x => x.ServiceName == Arguments.ServiceName))
 			{
 				var service = new ServiceController(Arguments.ServiceName);
 				if (service.Status == ServiceControllerStatus.Running)
@@ -460,10 +447,6 @@ namespace HostR.Services
 					service.Stop();
 					service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromMinutes(1));
 				}
-			}
-			catch (InvalidOperationException)
-			{
-				WriteLine("Service is not currently installed so we cannot stop the service.");
 			}
 
 			// Get a list of all other agents except this one.
@@ -519,12 +502,12 @@ namespace HostR.Services
 		{
 			if (Environment.UserInteractive)
 			{
-				// Starts the deployment agent in runtime mode.
-				StartProcess(_applicationDirectory, _applicationName + ".exe", Arguments.ServiceArguments);
+				// Starts the deployment service in runtime mode.
+				StartProcess(Arguments.DirectoryToUpgrade, _applicationName + ".exe", Arguments.ServiceArguments);
 			}
 			else
 			{
-				// Starts the deployment agent in service mode.
+				// Starts the deployment service in service mode.
 				using (var service = new ServiceController(Arguments.ServiceName))
 				{
 					service.Start();
@@ -533,14 +516,14 @@ namespace HostR.Services
 			}
 		}
 
-		private void StartServiceUpdate(long size)
+		private void StartServiceUpdate(WindowsServiceUpdate update)
 		{
-			var agentBits = DownloadUpdate(size);
+			var agentBits = DownloadUpdate(update);
 			var directory = SaveUpdate(agentBits);
 
-			StartProcess(directory, _applicationName + ".exe", " -r \"" + _applicationDirectory + "\"");
+			StartProcess(directory, _applicationName + ".exe", Arguments.ServiceArguments + " -r \"" + _applicationDirectory + "\"");
 
-			WriteLine("Shutting down agent for updating.");
+			WriteLine("Shutting down service for updating.");
 			OnStop();
 		}
 
@@ -575,7 +558,7 @@ namespace HostR.Services
 			// Make sure the current upgrading executable is not running in the target path.
 			if (Arguments.DirectoryToUpgrade.Equals(_applicationDirectory, StringComparison.OrdinalIgnoreCase))
 			{
-				WriteLine("You cannot update from the same directory as the target.");
+				WriteLine("You cannot update from the same directory as the target.", LogLevel.Fatal);
 				return;
 			}
 
@@ -583,11 +566,11 @@ namespace HostR.Services
 			CopyDirectory(_applicationDirectory, Arguments.DirectoryToUpgrade);
 
 			// Finished updating the server so log the success.
-			WriteLine("Finished updating the sync agent to v" + _version);
+			WriteLine("Finished updating the service to v" + _version);
 
 			// Start the service back up.
 			var mode = Environment.UserInteractive ? "runtime" : "service";
-			WriteLine(String.Format("Starting the updated sync agent in {0} mode.", mode));
+			WriteLine(String.Format("Starting the updated service in {0} mode.", mode));
 			StartServiceAfterUpdate();
 		}
 
@@ -596,7 +579,7 @@ namespace HostR.Services
 		/// </summary>
 		private void WaitForServiceShutdown()
 		{
-			// Get all the other agent processes other than this one.
+			// Get all the other service processes other than this one.
 			var myProcess = System.Diagnostics.Process.GetCurrentProcess();
 			var otherProcesses = System.Diagnostics.Process.GetProcessesByName(Arguments.ServiceName)
 				.Where(p => p.Id != myProcess.Id)
@@ -605,11 +588,11 @@ namespace HostR.Services
 			// Start a timeout timer so we can give up after 30 seconds.
 			var timeout = Stopwatch.StartNew();
 
-			// Keep checking for other processes for 30 seconds. The other agent should have stopped within the timeout.
+			// Keep checking for other processes for 30 seconds. The other service should have stopped within the timeout.
 			while ((otherProcesses.Count > 0) && (timeout.Elapsed.TotalSeconds < 30))
 			{
 				// Display we are waiting.
-				WriteLine("Waiting for the other agents to shutdown.");
+				WriteLine("Waiting for the other services to shutdown.");
 
 				// Delay for a second.
 				Thread.Sleep(1000);

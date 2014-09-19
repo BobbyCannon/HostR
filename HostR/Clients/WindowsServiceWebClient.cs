@@ -1,6 +1,7 @@
 ﻿#region References
 
 using System.Net.Http;
+using HostR.Interfaces;
 using HostR.Services;
 using Newtonsoft.Json;
 
@@ -41,7 +42,7 @@ namespace HostR.Clients
 		/// </summary>
 		/// <param name="details">The details of the service that is checking for the update.</param>
 		/// <returns>The size of the update.</returns>
-		public long CheckForUpdate(WindowsServiceDetails details)
+		public WindowsServiceUpdate CheckForUpdate(WindowsServiceDetails details)
 		{
 			using (var response = _client.Post(_serviceRoute + "/CheckForUpdate", details))
 			{
@@ -49,7 +50,7 @@ namespace HostR.Clients
 
 				using (var content = response.Content)
 				{
-					return JsonConvert.DeserializeObject<long>(content.ReadAsStringAsync().Result);
+					return JsonConvert.DeserializeObject<WindowsServiceUpdate>(content.ReadAsStringAsync().Result);
 				}
 			}
 		}

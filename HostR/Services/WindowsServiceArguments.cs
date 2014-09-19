@@ -49,6 +49,7 @@ namespace HostR.Services
 		public bool UninistallService { get; set; }
 		public bool UpdateService { get; set; }
 		public bool WaitForDebugger { get; set; }
+		public bool VerboseLogging { get; set; }
 
 		#endregion
 
@@ -124,6 +125,12 @@ namespace HostR.Services
 					case "-d":
 					case "/d":
 						WaitForDebugger = true;
+						continue;
+					
+					case "-v":
+					case "/v":
+						VerboseLogging = true;
+						builder.Append(" " + argument);
 						continue;
 
 					case "-h":

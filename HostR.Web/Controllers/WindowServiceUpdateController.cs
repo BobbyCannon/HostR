@@ -1,19 +1,18 @@
 ﻿#region References
 
-using System;
 using System.Configuration;
-using System.Net;
 using System.Web.Hosting;
 using System.Web.Http;
 using System.Web.Security;
 using HostR.Clients;
+using HostR.Interfaces;
 using HostR.Services;
 
 #endregion
 
 namespace HostR.Web.Controllers
 {
-	public class WindowServiceUpdateController : ApiController, IWindowsServiceWebService
+	public class WindowsServiceUpdateController : ApiController, IWindowsServiceWebService
 	{
 		#region Fields
 
@@ -23,7 +22,7 @@ namespace HostR.Web.Controllers
 
 		#region Constructors
 
-		public WindowServiceUpdateController()
+		public WindowsServiceUpdateController()
 		{
 			var directory = HostingEnvironment.MapPath("~/AppData/");
 			_service = new WindowsServiceWebService(directory);
@@ -33,20 +32,6 @@ namespace HostR.Web.Controllers
 
 		#region Methods
 
-		[HttpPost]
-		[ActionName("Login")]
-		[AllowAnonymous]
-		public void Login([FromBody] LoginCredentials credentials)
-		{
-			var expectedUserName = ConfigurationManager.AppSettings["UserName"];
-			var expectedPassword = ConfigurationManager.AppSettings["Password"];
-
-			if (credentials.UserName == expectedUserName && credentials.Password == expectedPassword)
-			{
-				FormsAuthentication.SetAuthCookie(credentials.UserName, false);
-			}
-		}
-
 		/// <summary>
 		/// Checks to see if there is an update for the service. The size of the update will be return. 
 		/// If the service returns 0 if no update is available.
@@ -55,7 +40,7 @@ namespace HostR.Web.Controllers
 		/// <returns>The size of the update.</returns>
 		[HttpPost]
 		[ActionName("CheckForUpdate")]
-		public long CheckForUpdate([FromBody] WindowsServiceDetails details)
+		public WindowsServiceUpdate CheckForUpdate([FromBody] WindowsServiceDetails details)
 		{
 			return _service.CheckForUpdate(details);
 		}
@@ -70,6 +55,20 @@ namespace HostR.Web.Controllers
 		public byte[] DownloadUpdateChunk([FromBody] WindowsServiceUpdateRequest request)
 		{
 			return _service.DownloadUpdateChunk(request);
+		}
+
+		[HttpPost]
+		[ActionName("Login")]
+		[AllowAnonymous]
+		public void Login([FromBody] LoginCredentials credentials)
+		{
+			var expectedUserName = ConfigurationManager.AppSettings["UserName"];
+			var expectedPassword = ConfigurationManager.AppSettings["Password"];
+
+			if (credentials.UserName == expectedUserName && credentials.Password == expectedPassword)
+			{
+				FormsAuthentication.SetAuthCookie(credentials.UserName, false);
+			}
 		}
 
 		#endregion

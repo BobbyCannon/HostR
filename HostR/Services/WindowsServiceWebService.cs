@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using HostR.Interfaces;
 
 #endregion
 
@@ -33,33 +34,39 @@ namespace HostR.Services
 		/// </summary>
 		/// <param name="details">The details of the service that is checking for the update.</param>
 		/// <returns>The size of the update.</returns>
-		public long CheckForUpdate(WindowsServiceDetails details)
+		public WindowsServiceUpdate CheckForUpdate(WindowsServiceDetails details)
 		{
+			var response = new WindowsServiceUpdate();
 			if (!Directory.Exists(_appDataDirectory))
 			{
-				return -1;
+				response.Size = -1;
+				return response;
 			}
 
 			var filter = details.Name + "-*.zip";
 			var zipFilePath = Directory.GetFiles(_appDataDirectory, filter).OrderByDescending(x => x).FirstOrDefault();
 			if (zipFilePath == null)
 			{
-				return -2;
+				response.Size = -2;
+				return response;
 			}
 
 			var fileNameParts = Path.GetFileNameWithoutExtension(zipFilePath).Split('-');
 			if (fileNameParts.Length != 2)
 			{
-				return -3;
+				response.Size = -3;
+				return response;
 			}
 
 			var version = fileNameParts[1];
 			if (version != details.Version)
 			{
-				return new FileInfo(zipFilePath).Length;
+				response.Name = Path.GetFileName(zipFilePath);
+				response.Size = new FileInfo(zipFilePath).Length;
+				return response;
 			}
 
-			return 0;
+			return response;
 		}
 
 		/// <summary>
@@ -74,22 +81,12 @@ namespace HostR.Services
 				throw new Exception("Could not find the directory update.");
 			}
 
-			var filter = request.Name + "-*.zip";
-			var zipFilePath = Directory
-				.GetFiles(_appDataDirectory, filter)
-				.OrderByDescending(x => x)
-				.FirstOrDefault();
-
-			if (zipFilePath == null)
-			{
-				throw new Exception("Could not find the agent update.");
-			}
-
-			var fileInfo = new FileInfo(zipFilePath);
-			return FileChunk(fileInfo, request.Offset);
+			var filePath = _appDataDirectory + "\\" + request.Name;
+			var fileInfo = new FileInfo(filePath);
+			return !fileInfo.Exists ? new byte[0] : FileChunk(fileInfo, request.Offset);
 		}
 
-		private byte[] FileChunk(FileInfo info, long offset)
+		private static byte[] FileChunk(FileInfo info, long offset)
 		{
 			if (offset < 0 || offset >= info.Length)
 			{

@@ -1,4 +1,10 @@
-﻿namespace HostR.Services
+﻿#region References
+
+using HostR.Services;
+
+#endregion
+
+namespace HostR.Interfaces
 {
 	public interface IWindowsServiceWebService
 	{
@@ -10,7 +16,7 @@
 		/// </summary>
 		/// <param name="details">The details of the service that is checking for the update.</param>
 		/// <returns>The size of the update.</returns>
-		long CheckForUpdate(WindowsServiceDetails details);
+		WindowsServiceUpdate CheckForUpdate(WindowsServiceDetails details);
 
 		/// <summary>
 		/// Downloads a chuck of the update based on the offset.

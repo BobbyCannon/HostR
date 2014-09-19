@@ -1,6 +1,7 @@
 ﻿#region References
 
 using HostR.Clients;
+using HostR.Interfaces;
 using HostR.Services;
 
 #endregion
@@ -15,7 +16,7 @@ namespace HostR.Agent
 		{
 			var arguments = WindowsServiceArguments.Create(args);
 			var credentials = new LoginCredentials { UserName = arguments.ServiceWebApiUserName, Password = arguments.ServiceWebApiPassword };
-			var client = new WindowsServiceWebClient<LoginCredentials>(arguments.ServiceWebApi, "api/WindowServiceUpdate", credentials);
+			var client = new WindowsServiceWebClient<LoginCredentials>(arguments.ServiceWebApi, "api/WindowsServiceUpdate", credentials);
 			var service = new Service("HostR Agent", "Service agent for HostR.", arguments, client);
 			service.Start();
 		}
@@ -47,7 +48,7 @@ namespace HostR.Agent
 			{
 				var count = 0;
 
-				while (!CancellationPending)
+				while (IsRunning)
 				{
 					CheckForUpdate();
 					WriteLine("Count: " + count++);

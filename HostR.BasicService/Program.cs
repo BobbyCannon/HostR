@@ -44,7 +44,7 @@ namespace HostR.BasicService
 			{
 				var count = 0;
 
-				while (!CancellationPending)
+				while (IsRunning)
 				{
 					WriteLine("Count: " + count++);
 					Sleep(5000);
