@@ -1,7 +1,6 @@
 ﻿#region References
 
 using System.Net.Http;
-using HostR.Interfaces;
 using HostR.Services;
 using Newtonsoft.Json;
 

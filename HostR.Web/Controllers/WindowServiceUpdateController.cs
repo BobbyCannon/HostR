@@ -5,7 +5,6 @@ using System.Web.Hosting;
 using System.Web.Http;
 using System.Web.Security;
 using HostR.Clients;
-using HostR.Interfaces;
 using HostR.Services;
 
 #endregion

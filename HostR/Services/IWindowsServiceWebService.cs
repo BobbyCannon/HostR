@@ -1,10 +1,10 @@
 ﻿#region References
 
-using HostR.Services;
+
 
 #endregion
 
-namespace HostR.Interfaces
+namespace HostR.Services
 {
 	public interface IWindowsServiceWebService
 	{

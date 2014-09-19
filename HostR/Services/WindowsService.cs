@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hostr.Extensions;
 using HostR.Extensions;
-using HostR.Interfaces;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -147,16 +146,16 @@ namespace HostR.Services
 		{
 			var builder = new StringBuilder();
 
-			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-h] [-v]\r\n", _applicationName);
+			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-v] [-?]\r\n", _applicationName);
 			builder.AppendLine("[-i] Install the service.");
 			builder.AppendLine("[-u] Uninstall the service.");
-			builder.AppendLine("[-n] The name for the service. Defaults to FileName.");
+			builder.AppendLine("[-n] The name for the service.");
 			builder.AppendLine("[-w] The URI of the service API.");
 			builder.AppendLine("[-l] The username for the service API.");
 			builder.AppendLine("[-p] The password for the service API.");
 			builder.AppendLine("[-d] Developer option to wait for debugger.");
 			builder.AppendLine("[-v] Enables verbose logging.");
-			builder.Append("[-h] Prints the help menu.");
+			builder.Append("[-?] Prints the help menu.");
 
 			return builder.ToString();
 		}
@@ -168,6 +167,11 @@ namespace HostR.Services
 		/// <returns>True if an update has started or false otherwise.</returns>
 		protected void CheckForUpdate()
 		{
+			if (_client == null)
+			{
+				return;
+			}
+
 			try
 			{
 				WriteLine("Check for a service update.", LogLevel.Trace);

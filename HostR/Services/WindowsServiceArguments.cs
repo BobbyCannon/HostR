@@ -133,8 +133,8 @@ namespace HostR.Services
 						builder.Append(" " + argument);
 						continue;
 
-					case "-h":
-					case "/h":
+					case "-?":
+					case "/?":
 						ShowHelp = true;
 						continue;
 				}
