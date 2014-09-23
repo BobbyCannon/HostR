@@ -8,27 +8,27 @@ using Newtonsoft.Json;
 
 namespace HostR.Clients
 {
-	public class WindowsServiceWebClient<T> : IWindowsServiceWebService
-		where T : class
+	public class WindowsServiceWebClient : IWindowsServiceWebService
 	{
+		private readonly LoginCredentials _credentials;
+
 		#region Fields
 
-		private readonly LoginHttpClient<T> _client;
-		private readonly string _serviceRoute;
+		private readonly HttpClient _client;
 
 		#endregion
 
 		#region Constructors
 
-		public WindowsServiceWebClient(string baseUri, string serviceRoute, T credentials)
-			: this(baseUri, serviceRoute, serviceRoute + "/Login", credentials)
+		public WindowsServiceWebClient(string uri, LoginCredentials credentials = null)
+			: this (new HttpClient(uri), credentials)
 		{
 		}
 
-		public WindowsServiceWebClient(string baseUri, string serviceRoute, string loginRoute, T credentials)
+		public WindowsServiceWebClient(HttpClient client, LoginCredentials credentials = null)
 		{
-			_serviceRoute = serviceRoute;
-			_client = new LoginHttpClient<T>(baseUri, loginRoute, credentials);
+			_client = client;
+			_credentials = credentials;
 		}
 
 		#endregion
@@ -37,13 +37,18 @@ namespace HostR.Clients
 
 		/// <summary>
 		/// Checks to see if there is an update for the service. The size of the update will be return. 
-		/// If the service returns 0 if no update is available.
+		/// If the service returns an empty name and 0 size if no update is available.
 		/// </summary>
 		/// <param name="details">The details of the service that is checking for the update.</param>
 		/// <returns>The size of the update.</returns>
 		public WindowsServiceUpdate CheckForUpdate(WindowsServiceDetails details)
 		{
-			using (var response = _client.Post(_serviceRoute + "/CheckForUpdate", details))
+			if (_credentials != null)
+			{
+				Login(_credentials);
+			}
+
+			using (var response = _client.Post("CheckForUpdate", details))
 			{
 				CheckResponse(response);
 
@@ -61,7 +66,12 @@ namespace HostR.Clients
 		/// <returns>A chuck of the update starting from the update.</returns>
 		public byte[] DownloadUpdateChunk(WindowsServiceUpdateRequest request)
 		{
-			using (var response = _client.Post(_serviceRoute + "/DownloadUpdateChunk", request))
+			if (_credentials != null)
+			{
+				Login(_credentials);
+			}
+
+			using (var response = _client.Post("DownloadUpdateChunk", request))
 			{
 				CheckResponse(response);
 
@@ -69,6 +79,19 @@ namespace HostR.Clients
 				{
 					return JsonConvert.DeserializeObject<byte[]>(content.ReadAsStringAsync().Result);
 				}
+			}
+		}
+
+		/// <summary>
+		/// Allows the client to log in to the service. This only has to be implemented by services that require
+		/// authentication. If you service does not require authentication then just leave this method not implemented.
+		/// </summary>
+		/// <param name="credentials">The credentials to use for authentication.</param>
+		public void Login(LoginCredentials credentials)
+		{
+			using (var response = _client.Post("Login", credentials))
+			{
+				CheckResponse(response);
 			}
 		}
 

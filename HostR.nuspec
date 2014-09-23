@@ -4,9 +4,9 @@
 		<id>HostR</id>
 		<version>1.0</version>
 		<authors>Bobby Cannon</authors>
-		<description>
-			HostR is a hosting framework for developers. It allows you to quickly host and manage services.
-		</description>
+		<description>HostR is a hosting framework for developers. It allows you to quickly host and manage services.</description>
+		<projectUrl>http://bobbycannon.github.io/HostR/</projectUrl>
+		<tags>HostR hosting host service services</tags>
 		<dependencies>
 			<dependency id="NLog" version="3.1.0.0" />
 			<dependency id="Newtonsoft.Json" version="6.0.4" />

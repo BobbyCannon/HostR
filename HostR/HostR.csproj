@@ -55,7 +55,6 @@
   <ItemGroup>
     <Compile Include="Clients\HttpClient.cs" />
     <Compile Include="Clients\LoginCredentials.cs" />
-    <Compile Include="Clients\LoginHttpClient.cs" />
     <Compile Include="Clients\WindowsServiceWebClient.cs" />
     <Compile Include="Extensions\Collection.cs" />
     <Compile Include="Extensions\DirectoryInfo.cs" />

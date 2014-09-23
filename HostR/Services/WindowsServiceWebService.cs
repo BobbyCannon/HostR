@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using HostR.Clients;
 
 #endregion
 
@@ -83,6 +84,16 @@ namespace HostR.Services
 			var filePath = _appDataDirectory + "\\" + request.Name;
 			var fileInfo = new FileInfo(filePath);
 			return !fileInfo.Exists ? new byte[0] : FileChunk(fileInfo, request.Offset);
+		}
+
+		/// <summary>
+		/// Allows the client to log in to the service. This only has to be implemented by services that require
+		/// authentication. If you service does not require authentication then just leave this method not implemented.
+		/// </summary>
+		/// <param name="credentials">The credentials to use for authentication.</param>
+		public void Login(LoginCredentials credentials)
+		{
+			throw new NotImplementedException();
 		}
 
 		private static byte[] FileChunk(FileInfo info, long offset)

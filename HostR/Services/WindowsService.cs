@@ -32,11 +32,8 @@ namespace HostR.Services
 		private readonly string _description;
 		private readonly string _displayName;
 		private readonly Thread _serviceThread;
-		private string _applicationDirectory;
 		private string _applicationFilePath;
-		private string _applicationName;
 		private Logger _logger;
-		private string _version;
 
 		#endregion
 
@@ -69,9 +66,24 @@ namespace HostR.Services
 		public bool TriggerPending { get; set; }
 
 		/// <summary>
-		/// The arguments the service was started with
+		/// The arguments the service was started with.
 		/// </summary>
 		protected WindowsServiceArguments Arguments { get; private set; }
+
+		/// <summary>
+		/// Gets the directory for the service.
+		/// </summary>
+		protected string ServiceDirectory { get; private set; }
+
+		/// <summary>
+		/// Gets the file name of the service.
+		/// </summary>
+		protected string ServiceFileName { get; private set; }
+
+		/// <summary>
+		/// Gets the version of the service.
+		/// </summary>
+		protected string ServiceVersion { get; private set; }
 
 		#endregion
 
@@ -84,13 +96,13 @@ namespace HostR.Services
 		{
 			var assembly = Assembly.GetCallingAssembly();
 			_applicationFilePath = assembly.Location;
-			_applicationDirectory = Path.GetDirectoryName(_applicationFilePath);
-			_applicationName = Path.GetFileNameWithoutExtension(_applicationFilePath);
-			_version = assembly.GetName().Version.ToString();
+			ServiceFileName = Path.GetFileNameWithoutExtension(_applicationFilePath);
+			ServiceDirectory = Path.GetDirectoryName(_applicationFilePath);
+			ServiceVersion = assembly.GetName().Version.ToString();
 
 			if (string.IsNullOrEmpty(Arguments.ServiceName))
 			{
-				Arguments.ServiceName = _applicationName;
+				Arguments.ServiceName = ServiceFileName;
 			}
 
 			if (LogManager.Configuration == null || LogManager.Configuration.AllTargets.Count <= 0)
@@ -99,7 +111,7 @@ namespace HostR.Services
 			}
 
 			_logger = LogManager.GetLogger(Arguments.ServiceName);
-			WriteLine("{0} v{1}", _displayName, _version);
+			WriteLine("{0} v{1}", _displayName, ServiceVersion);
 
 			if (Arguments.ShowHelp)
 			{
@@ -146,7 +158,7 @@ namespace HostR.Services
 		{
 			var builder = new StringBuilder();
 
-			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-v] [-?]\r\n", _applicationName);
+			builder.AppendFormat("{0} [-i] [-u] [-n] [ServiceName] [-w] [WebServiceUri] [-l] [UserName] [-p] [Password] [-v] [-?]\r\n", ServiceFileName);
 			builder.AppendLine("[-i] Install the service.");
 			builder.AppendLine("[-u] Uninstall the service.");
 			builder.AppendLine("[-n] The name for the service.");
@@ -175,7 +187,7 @@ namespace HostR.Services
 			try
 			{
 				WriteLine("Check for a service update.", LogLevel.Trace);
-				var serviceDetails = new WindowsServiceDetails { Name = _applicationName, Version = _version };
+				var serviceDetails = new WindowsServiceDetails { Name = ServiceFileName, Version = ServiceVersion };
 				var update = _client.CheckForUpdate(serviceDetails);
 
 				if (update.Size > 0)
@@ -408,7 +420,7 @@ namespace HostR.Services
 		{
 			try
 			{
-				var displayName = Arguments.ServiceName != _applicationName ? _displayName + " (" + Arguments.ServiceName + ")" : _displayName;
+				var displayName = Arguments.ServiceName != ServiceFileName ? _displayName + " (" + Arguments.ServiceName + ")" : _displayName;
 				WindowsServiceInstaller.InstallService(_applicationFilePath, Arguments.ServiceName, displayName, _description, ServiceStartMode.Automatic);
 				WindowsServiceInstaller.SetServiceArguments(Arguments.ServiceName, Arguments.ServiceArguments);
 			}
@@ -524,7 +536,7 @@ namespace HostR.Services
 			if (Environment.UserInteractive)
 			{
 				// Starts the deployment service in runtime mode.
-				StartProcess(Arguments.DirectoryToUpgrade, _applicationName + ".exe", Arguments.ServiceArguments);
+				StartProcess(Arguments.DirectoryToUpgrade, ServiceFileName + ".exe", Arguments.ServiceArguments);
 			}
 			else
 			{
@@ -542,7 +554,7 @@ namespace HostR.Services
 			var agentBits = DownloadUpdate(update);
 			var directory = SaveUpdate(agentBits);
 
-			StartProcess(directory, _applicationName + ".exe", Arguments.ServiceArguments + " -r \"" + _applicationDirectory + "\"");
+			StartProcess(directory, ServiceFileName + ".exe", Arguments.ServiceArguments + " -r \"" + ServiceDirectory + "\"");
 
 			WriteLine("Shutting down service for updating.");
 			Task.Run(() => OnStop());
@@ -568,7 +580,7 @@ namespace HostR.Services
 		/// </summary>
 		private void UpdateService()
 		{
-			WriteLine("Starting to update the service to v" + _version);
+			WriteLine("Starting to update the service to v" + ServiceVersion);
 
 			// Shutdown all other agents.
 			ShutdownServices();
@@ -577,17 +589,17 @@ namespace HostR.Services
 			WaitForServiceShutdown();
 
 			// Make sure the current upgrading executable is not running in the target path.
-			if (Arguments.DirectoryToUpgrade.Equals(_applicationDirectory, StringComparison.OrdinalIgnoreCase))
+			if (Arguments.DirectoryToUpgrade.Equals(ServiceDirectory, StringComparison.OrdinalIgnoreCase))
 			{
 				WriteLine("You cannot update from the same directory as the target.", LogLevel.Fatal);
 				return;
 			}
 
 			// Copy the application directory to the upgrade directory.
-			CopyDirectory(_applicationDirectory, Arguments.DirectoryToUpgrade);
+			CopyDirectory(ServiceDirectory, Arguments.DirectoryToUpgrade);
 
 			// Finished updating the server so log the success.
-			WriteLine("Finished updating the service to v" + _version);
+			WriteLine("Finished updating the service to v" + ServiceVersion);
 
 			// Start the service back up.
 			var mode = Environment.UserInteractive ? "runtime" : "service";
@@ -602,7 +614,7 @@ namespace HostR.Services
 		{
 			// Get all the other service processes other than this one.
 			var myProcess = System.Diagnostics.Process.GetCurrentProcess();
-			var otherProcesses = System.Diagnostics.Process.GetProcessesByName(_applicationName)
+			var otherProcesses = System.Diagnostics.Process.GetProcessesByName(ServiceFileName)
 				.Where(p => p.Id != myProcess.Id)
 				.ToList();
 
@@ -620,7 +632,7 @@ namespace HostR.Services
 				Thread.Sleep(1000);
 
 				// Refresh the process list.
-				otherProcesses = System.Diagnostics.Process.GetProcessesByName(_applicationName)
+				otherProcesses = System.Diagnostics.Process.GetProcessesByName(ServiceFileName)
 					.Where(p => p.Id != myProcess.Id)
 					.ToList();
 			}
