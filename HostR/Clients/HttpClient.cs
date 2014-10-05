@@ -1,6 +1,7 @@
 ﻿#region References
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -39,18 +40,7 @@ namespace HostR.Clients
 
 		public bool IsAuthenticated
 		{
-			get
-			{
-				foreach (Cookie cookie in Cookies)
-				{
-					if (cookie.Name == AuthorizationCookieName)
-					{
-						return true;
-					}
-				}
-
-				return false;
-			}
+			get { return Cookies.Cast<Cookie>().Any(cookie => cookie.Name == AuthorizationCookieName && !cookie.Expired); }
 		}
 
 		/// <summary>

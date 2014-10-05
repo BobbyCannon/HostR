@@ -17,39 +17,20 @@ namespace HostR.UnitTests.Services
 		{
 			var expected = new WindowsServiceArguments();
 			expected.OtherValues.Add("-c", "10");
+			expected.ServiceArguments = "-c 10";
 
 			var actual = WindowsServiceArguments.Create(new[] { "-c", "10" });
 			TestHelper.AreEqual(expected, actual);
 		}
-		
-		[TestMethod]
-		public void ParseHelp()
-		{
-			var expected = new WindowsServiceArguments();
-			expected.ShowHelp = true;
-
-			var actual = WindowsServiceArguments.Create(new[] { "-?" });
-			TestHelper.AreEqual(expected, actual);
-		}
-		
-		[TestMethod]
-		public void ParseVerbose()
-		{
-			var expected = new WindowsServiceArguments();
-			expected.VerboseLogging = true;
-			expected.ServiceArguments = "-v";
-
-			var actual = WindowsServiceArguments.Create(new[] { "-v" });
-			TestHelper.AreEqual(expected, actual);
-		}
 
 		[TestMethod]
-		public void ParseInstall()
+		public void ParseCustomArgumentWithoutValueForService()
 		{
 			var expected = new WindowsServiceArguments();
-			expected.InstallService = true;
+			expected.OtherValues.Add("-c", "");
+			expected.ServiceArguments = "-c";
 
-			var actual = WindowsServiceArguments.Create(new[] { "-i" });
+			var actual = WindowsServiceArguments.Create(new[] { "-c" });
 			TestHelper.AreEqual(expected, actual);
 		}
 
@@ -71,6 +52,26 @@ namespace HostR.UnitTests.Services
 			expected.DirectoryToUpgrade = "C:\\Users\\Bobby\\Desktop\\Test";
 
 			var actual = WindowsServiceArguments.Create(new[] { "-r", "C:\\Users\\Bobby\\Desktop\\Test" });
+			TestHelper.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
+		public void ParseHelp()
+		{
+			var expected = new WindowsServiceArguments();
+			expected.ShowHelp = true;
+
+			var actual = WindowsServiceArguments.Create(new[] { "-?" });
+			TestHelper.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
+		public void ParseInstall()
+		{
+			var expected = new WindowsServiceArguments();
+			expected.InstallService = true;
+
+			var actual = WindowsServiceArguments.Create(new[] { "-i" });
 			TestHelper.AreEqual(expected, actual);
 		}
 
@@ -127,6 +128,17 @@ namespace HostR.UnitTests.Services
 			expected.UninistallService = true;
 
 			var actual = WindowsServiceArguments.Create(new[] { "-u" });
+			TestHelper.AreEqual(expected, actual);
+		}
+
+		[TestMethod]
+		public void ParseVerbose()
+		{
+			var expected = new WindowsServiceArguments();
+			expected.VerboseLogging = true;
+			expected.ServiceArguments = "-v";
+
+			var actual = WindowsServiceArguments.Create(new[] { "-v" });
 			TestHelper.AreEqual(expected, actual);
 		}
 

@@ -1,3 +1,10 @@
+param (
+    [Parameter()]
+    [switch] $IncludeDocumentation,
+    [Parameter()]
+    [string] $Configuration = "Release"
+)
+
 $ErrorActionPreference = "Stop"
 $watch = [System.Diagnostics.Stopwatch]::StartNew()
 $scriptPath = Split-Path (Get-Variable MyInvocation).Value.MyCommand.Path 
@@ -6,11 +13,6 @@ $destination = "C:\Binaries\HostR"
 
 if (Test-Path $destination -PathType Container){
     Remove-Item $destination -Recurse -Force
-}
-
-$configuration = "Release"
-if ($args.Count -gt 0) {
-	$configuration = $args
 }
 
 $build = [Math]::Floor([DateTime]::UtcNow.Subtract([DateTime]::Parse("01/01/2000").Date).TotalDays)
@@ -26,12 +28,12 @@ Write-Host "Building HostR (build: $build, revision: $revision)..." -ForegroundC
 try
 {
     $msbuild = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe"
-    cmd /c $msbuild "$scriptPath\HostR.sln" /p:Configuration="$configuration" /p:Platform="Any CPU" /t:Rebuild /p:VisualStudioVersion=12.0 /v:m /m /clp:ErrorsOnly
+    cmd /c $msbuild "$scriptPath\HostR.sln" /p:Configuration="$Configuration" /p:Platform="Any CPU" /t:Rebuild /p:VisualStudioVersion=12.0 /v:m /m /clp:ErrorsOnly
 
     foreach ($folder in $folders) {
         $folderName = $folder.Name
         if (Test-Path -Type Leaf "$folderName\Build.ps1") {
-            & .\$folderName\Build.ps1 "$configuration"
+            & .\$folderName\Build.ps1 "$Configuration"
             Set-Location $scriptPath
         }
     }

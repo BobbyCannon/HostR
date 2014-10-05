@@ -143,12 +143,17 @@ namespace HostR.Services
 				{
 					key = argument;
 					OtherValues.Add(key, string.Empty);
+					if (i == _arguments.Length - 1)
+					{
+						builder.AppendFormat(" {0}", key);
+					}
 					continue;
 				}
 
 				if (key != null)
 				{
 					OtherValues[key] = OtherValues[key].Length > 0 ? " " + argument : argument;
+					builder.AppendFormat(" {0} {1}", key, argument);
 				}
 			}
 
